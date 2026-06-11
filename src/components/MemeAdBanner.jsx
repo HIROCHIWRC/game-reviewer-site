@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { IconButton } from './IconButton';
 import { Modal } from './Modal';
-
-const SERVER = '';
+import { API_BASE } from '../config';
 
 const CLICKBAIT_HEADERS = [
   '🔥 ШОК! СЕНСАЦИЯ!',
@@ -108,8 +107,8 @@ export function MemeAdBanner() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${SERVER}/api/memes/texts`).then((r) => r.json()),
-      fetch(`${SERVER}/api/memes/images`).then((r) => r.json()),
+      fetch(`${API_BASE}/api/memes/texts`).then((r) => r.json()),
+      fetch(`${API_BASE}/api/memes/images`).then((r) => r.json()),
     ])
       .then(([textsData, imagesData]) => {
         setPhrases(textsData.texts || []);
@@ -127,7 +126,7 @@ export function MemeAdBanner() {
     }
     const chosen = available[Math.floor(Math.random() * available.length)];
     lastImageRef.current = chosen;
-    return `${SERVER}${chosen}`;
+    return `${API_BASE}${chosen}`;
   }, [images]);
 
   const getRandomText = useCallback(() => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BackButton } from '../components/BackButton';
 import { RedButton } from '../components/RedButton';
+import { assetUrl } from '../config';
 import { adminApi } from '../api';
 
 function ResultBanner({ message, onClose }) {
@@ -313,7 +314,7 @@ function MemesPanel() {
             const filename = url.split('/').pop();
             return (
               <div key={url} className="relative group aspect-[4/3] bg-slate-900/60 border border-slate-700/50 rounded-lg overflow-hidden">
-                <img src={url} alt={filename} className="w-full h-full object-contain" />
+                <img src={assetUrl(url)} alt={filename} className="w-full h-full object-contain" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all flex items-center justify-center">
                   <button
                     type="button"

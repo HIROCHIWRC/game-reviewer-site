@@ -1,5 +1,6 @@
 import { BackButton } from '../components/BackButton';
 import { ScoreBadge } from '../components/ScoreBadge';
+import { assetUrl } from '../config';
 import { calculateOverallScore } from '../utils/scoreUtils';
 import { getRank } from '../constants/ranks';
 
@@ -100,7 +101,7 @@ export function GameCardScreen({ games, onBack, onViewProfile }) {
             {(game.posterUrl || game.coverUrl) && (
               <img
                 key={game.posterUrl || game.coverUrl}
-                src={game.posterUrl || game.coverUrl}
+                src={assetUrl(game.posterUrl || game.coverUrl)}
                 alt={game.title}
                 className="absolute inset-0 w-full h-full object-cover"
                 onError={(e) => { e.target.style.display = 'none'; }}

@@ -1,4 +1,4 @@
-const BASE_URL = '/api';
+import { API_BASE } from './config';
 
 // Получить токен из localStorage
 const getToken = () => localStorage.getItem('token');
@@ -8,7 +8,7 @@ async function request(path, options = {}) {
   const token = getToken();
   let res;
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
+    res = await fetch(`${API_BASE}/api${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ async function requestFormData(path, formData) {
   const token = getToken();
   let res;
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
+    res = await fetch(`${API_BASE}/api${path}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,

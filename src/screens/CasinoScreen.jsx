@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BackButton } from '../components/BackButton';
 import { CoinIcon } from '../components/CoinIcon';
+import { assetUrl } from '../config';
 import { casesApi } from '../api';
 
 export function CasinoScreen({ onBack, onOpenCase }) {
@@ -27,7 +28,7 @@ export function CasinoScreen({ onBack, onOpenCase }) {
             >
               <div className="w-32 h-32 rounded-xl overflow-hidden bg-slate-800 flex items-center justify-center">
                 <img
-                  src={c.image}
+                  src={assetUrl(c.image)}
                   alt={c.name}
                   className="w-full h-full object-cover"
                   onError={(e) => { e.target.style.display = 'none'; }}

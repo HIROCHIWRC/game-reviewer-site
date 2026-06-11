@@ -5,6 +5,7 @@ import { Autocomplete } from '../components/Autocomplete';
 import { FormSelect } from '../components/FormSelect';
 import { ScoreSlider } from '../components/ScoreSlider';
 import { InfoButton } from '../components/InfoButton';
+import { assetUrl } from '../config';
 import { gamesApi } from '../api';
 import { GENRES } from '../constants/gameConstants';
 
@@ -125,7 +126,7 @@ export function AddGameScreen({ form, setFormField, currentOverallScore, isEditi
             </div>
           ) : form.coverUrl ? (
             <img
-              src={form.coverUrl}
+              src={assetUrl(form.coverUrl)}
               alt="Обложка"
               className="h-40 rounded-xl border border-slate-700/40 object-cover"
               onError={() => {

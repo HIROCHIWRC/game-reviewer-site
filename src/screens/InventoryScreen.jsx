@@ -3,6 +3,7 @@ import { BackButton } from '../components/BackButton';
 import { YellowButton } from '../components/YellowButton';
 import { CoinIcon } from '../components/CoinIcon';
 import { Modal } from '../components/Modal';
+import { assetUrl } from '../config';
 import { casesApi } from '../api';
 
 const RARITY_ORDER = ['gold', 'red', 'pink', 'purple', 'blue', 'sky', 'white'];
@@ -68,7 +69,7 @@ export function InventoryScreen({ onBack, onCoinsChange }) {
                     style={{ backgroundColor: item.rarityGlow }}
                   >
                     <img
-                      src={item.image}
+                      src={assetUrl(item.image)}
                       alt={item.name}
                       className="w-full h-full object-contain"
                       onError={(e) => {
@@ -99,7 +100,7 @@ export function InventoryScreen({ onBack, onCoinsChange }) {
                 className="w-32 h-32 rounded-xl flex items-center justify-center border-2"
                 style={{ borderColor: sellTarget.rarityHex, backgroundColor: sellTarget.rarityGlow }}
               >
-                <img src={sellTarget.image} alt={sellTarget.name} className="w-full h-full object-contain rounded-xl p-1" />
+                <img src={assetUrl(sellTarget.image)} alt={sellTarget.name} className="w-full h-full object-contain rounded-xl p-1" />
               </div>
               <p className="text-lg font-bold text-slate-100">{sellTarget.name}</p>
               <p className="text-sm text-slate-400">{sellTarget.rarityLabel}</p>

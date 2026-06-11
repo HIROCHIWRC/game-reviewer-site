@@ -9,6 +9,7 @@ import { ScoreBadge } from '../components/ScoreBadge';
 import { Autocomplete } from '../components/Autocomplete';
 import { InfoButton } from '../components/InfoButton';
 import { Pagination } from '../components/Pagination';
+import { assetUrl } from '../config';
 import { FILTER_GENRE_OPTIONS, SORT_OPTIONS } from '../constants/gameConstants';
 
 const PER_PAGE = 20;
@@ -202,7 +203,7 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
                         {game.coverUrl && (
                           <img
                             key={game.coverUrl}
-                            src={game.coverUrl}
+                            src={assetUrl(game.coverUrl)}
                             alt=""
                             className="absolute inset-0 w-full h-full rounded object-cover z-10"
                             onError={(e) => { e.target.style.display = 'none'; }}

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { assetUrl } from '../config';
 import { casesApi } from '../api';
 import { BackButton } from '../components/BackButton';
 import { YellowButton } from '../components/YellowButton';
@@ -240,7 +241,7 @@ export function CaseOpeningScreen({ caseData, coins, onBack, onUpdateCoins }) {
                   }}
                 >
                   {item.image ? (
-                    <img src={item.image} alt="" className="w-full h-full object-contain p-1.5" />
+                    <img src={assetUrl(item.image)} alt="" className="w-full h-full object-contain p-1.5" />
                   ) : (
                     <span className="text-4xl font-black opacity-30 text-slate-600">?</span>
                   )}
@@ -279,7 +280,7 @@ export function CaseOpeningScreen({ caseData, coins, onBack, onUpdateCoins }) {
                 style={{ backgroundColor: skin.hex + '30' }}
               >
                 <img
-                  src={skin.image}
+                  src={assetUrl(skin.image)}
                   alt={skin.name}
                   className="w-full h-full object-cover"
                   onError={(e) => { e.target.style.display = 'none'; }}

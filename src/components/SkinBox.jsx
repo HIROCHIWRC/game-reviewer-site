@@ -1,3 +1,5 @@
+import { assetUrl } from '../config';
+
 export function SkinBox({ skin, size = 'w-56 h-56', glow = true, className = '' }) {
   const hex = skin?.hex || skin?.rarityHex || '#475569';
   const glowVal = skin?.glow || skin?.rarityGlow || 'rgba(71,85,105,0.2)';
@@ -13,7 +15,7 @@ export function SkinBox({ skin, size = 'w-56 h-56', glow = true, className = '' 
     >
       {skin?.image ? (
         <img
-          src={skin.image}
+          src={assetUrl(skin.image)}
           alt={skin.name}
           className="w-full h-full object-contain rounded-xl p-2"
           onError={(e) => {
