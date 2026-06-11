@@ -1,0 +1,75 @@
+const RARITIES = {
+  white:  { label: 'Industrial Grade', hex: '#94a3b8', glow: 'rgba(148,163,184,0.4)' },
+  sky:    { label: 'Mil-Spec',         hex: '#7dd3fc', glow: 'rgba(125,211,252,0.4)' },
+  blue:   { label: 'Restricted',       hex: '#60a5fa', glow: 'rgba(96,165,250,0.4)' },
+  purple: { label: 'Classified',       hex: '#a78bfa', glow: 'rgba(167,139,250,0.4)' },
+  pink:   { label: 'Covert',           hex: '#f472b6', glow: 'rgba(244,114,182,0.4)' },
+  red:    { label: 'Rare',             hex: '#f87171', glow: 'rgba(248,113,113,0.4)' },
+  gold:   { label: 'Legendary',        hex: '#fbbf24', glow: 'rgba(251,191,36,0.6)' },
+};
+
+const SKINS = {
+  white: [
+    { name: 'Anodized Gunmetal', image: '/skins/white/anodized-gunmetal.png', value: 0.55 },
+    { name: 'Honey Paisley',    image: '/skins/white/honey-paisley.png',    value: 0.35 },
+    { name: 'Impact Drill',     image: '/skins/white/impact-drill.png',     value: 0.40 },
+    { name: 'Irradiated Alert', image: '/skins/white/irradiated-alert.png', value: 0.30 },
+    { name: 'Lush Ruins',       image: '/skins/white/lush-ruins.png',       value: 0.65 },
+    { name: 'Mint Kimono',      image: '/skins/white/mint-kimono.png',      value: 0.45 },
+    { name: 'Moon in Libra',    image: '/skins/white/moon-in-libra.png',    value: 0.50 },
+    { name: 'Oil Change',       image: '/skins/white/oil-change.png',       value: 0.25 },
+    { name: 'Sand Dune',        image: '/skins/white/sand-dune.png',        value: 0.35 },
+    { name: 'Snake Pit',        image: '/skins/white/snake-pit.png',        value: 0.40 },
+    { name: 'Storm',            image: '/skins/white/storm.png',            value: 0.60 },
+    { name: 'Sunbaked',         image: '/skins/white/sunbaked.png',         value: 0.30 },
+  ],
+  sky: [
+    { name: 'Baroque Purple',     image: '/skins/sky/baroque-purple.png',     value: 1.00 },
+    { name: 'Coral Paisley',      image: '/skins/sky/coral-paisley.png',      value: 0.80 },
+    { name: 'Fallout Warning',    image: '/skins/sky/fallout-warning.png',    value: 0.90 },
+    { name: 'Moss Quartz',        image: '/skins/sky/moss-quartz.png',        value: 1.20 },
+    { name: 'Mud Spec',           image: '/skins/sky/mud-spec.png',           value: 0.70 },
+    { name: 'Naval Shred Camo',   image: '/skins/sky/naval-shred-camo.png',   value: 0.85 },
+    { name: 'Phoenix Marker',     image: '/skins/sky/phoenix-marker.png',     value: 1.10 },
+    { name: 'Polished Malachite', image: '/skins/sky/polished-malachite.png', value: 1.40 },
+    { name: 'Safari Mesh',        image: '/skins/sky/safari-mesh.png',        value: 0.75 },
+  ],
+  blue: [
+    { name: 'Blaze',          image: '/skins/blue/blaze.png',          value: 4.00 },
+    { name: 'Candy Apple',    image: '/skins/blue/candy-apple.png',    value: 3.00 },
+    { name: 'Fraise Crane',   image: '/skins/blue/fraise-crane.png',   value: 3.50 },
+    { name: 'Purple DDPAT',   image: '/skins/blue/purple-ddpat.png',   value: 2.50 },
+    { name: 'Whiteout',       image: '/skins/blue/whiteout.png',       value: 4.50 },
+    { name: 'Zubastick',      image: '/skins/blue/zubastick.png',      value: 3.00 },
+  ],
+  purple: [
+    { name: "Death's Head",       image: '/skins/purple/deaths-head.png',       value: 7.50 },
+    { name: 'Dragon Tattoo',      image: '/skins/purple/dragon-tatoo.png',      value: 6.00 },
+    { name: 'Franklin',           image: '/skins/purple/franklin.png',           value: 5.00 },
+    { name: 'Phoenix Blacklight', image: '/skins/purple/phoenix-blacklight.png', value: 8.75 },
+    { name: 'Red Filigree',       image: '/skins/purple/red-filigree.png',       value: 7.00 },
+  ],
+  pink: [
+    { name: 'Fade',         image: '/skins/pink/fade.png',         value: 12.50 },
+    { name: 'Fennec Fox',   image: '/skins/pink/fennec-fox.png',   value: 10.00 },
+    { name: 'Knight',       image: '/skins/pink/knight.png',       value: 11.25 },
+    { name: 'Panthera Onca', image: '/skins/pink/panthera-onca.png', value: 13.75 },
+    { name: 'Wild Lily',    image: '/skins/pink/wild-lily.png',    value: 8.75 },
+  ],
+  red: [
+    { name: 'Kill Confirmed', image: '/skins/red/kill-confirmed.png', value: 30.00 },
+    { name: 'Longdog',        image: '/skins/red/longdog.png',        value: 21.00 },
+    { name: 'Nightwish',      image: '/skins/red/nightwish.png',      value: 24.00 },
+    { name: 'Ultraviolet',    image: '/skins/red/ultraviolet.png',    value: 18.00 },
+    { name: 'Wild Lotus',     image: '/skins/red/wild-lotus.png',     value: 36.00 },
+  ],
+  gold: [
+    { name: 'Doppler Phase 3',       image: '/skins/gold/doppler-phase-3.png',       value: 54.00 },
+    { name: 'Dragon Lore',           image: '/skins/gold/dragon-lore.png',           value: 105.00 },
+    { name: 'Gamma Doppler Emerald', image: '/skins/gold/gamma-doppler-emerald.png', value: 75.00 },
+    { name: 'Howl',                  image: '/skins/gold/howl.png',                  value: 90.00 },
+    { name: "Pandora's Box",         image: '/skins/gold/pandoras-box.png',          value: 45.00 },
+  ],
+};
+
+module.exports = { RARITIES, SKINS };
