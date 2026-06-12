@@ -98,3 +98,7 @@ POST /api/admin/memes/images     — multipart form (image field) — upload mem
 DELETE /api/admin/memes/images/:fn — delete meme image by filename (admin only)
 GET  /api/health                 — health check
 ```
+
+## Versioning
+- Version label displayed at `src/App.jsx` bottom-right corner.
+- **Bump version with every update.** Current: `1.0.1`.
