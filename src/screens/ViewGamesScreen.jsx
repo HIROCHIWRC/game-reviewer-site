@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { BackButton } from '../components/BackButton';
 import { FormSelect } from '../components/FormSelect';
@@ -28,10 +28,42 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
 
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, game: null });
   const [deleteModal, setDeleteModal] = useState({ visible: false, gameId: null, gameTitle: '' });
+  const touchTimer = useRef(null);
 
   const handleCloseContextMenu = () => setContextMenu((prev) => ({ ...prev, visible: false }));
 
   const isOwnGame = (game) => !game.owner || game.owner === currentUser;
+
+  const showContextMenu = (clientX, clientY, game) => {
+    if (scope === 'all' || !isOwnGame(game)) return;
+    const MENU_W = 192;
+    const MENU_H = 90;
+    const x = clientX + MENU_W > window.innerWidth ? clientX - MENU_W : clientX;
+    const y = clientY + MENU_H > window.innerHeight ? clientY - MENU_H : clientY;
+    setContextMenu({ visible: true, x, y, game });
+  };
+
+  const handleTouchStart = (e, game) => {
+    if (scope === 'all' || !isOwnGame(game)) return;
+    touchTimer.current = setTimeout(() => {
+      const touch = e.touches[0];
+      showContextMenu(touch.clientX, touch.clientY, game);
+    }, 500);
+  };
+
+  const handleTouchMove = () => {
+    if (touchTimer.current) {
+      clearTimeout(touchTimer.current);
+      touchTimer.current = null;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimer.current) {
+      clearTimeout(touchTimer.current);
+      touchTimer.current = null;
+    }
+  };
 
   const handleSearchChange = (e) => { setSearchQuery(e.target.value); setPage(1); };
   const handleSearchSelect = (item) => { setSearchQuery(item.title); setPage(1); };
@@ -43,11 +75,7 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
   const handleRowContextMenu = (e, game) => {
     if (scope === 'all' || !isOwnGame(game)) return;
     e.preventDefault();
-    const MENU_W = 192;
-    const MENU_H = 90;
-    const x = e.clientX + MENU_W > window.innerWidth ? e.clientX - MENU_W : e.clientX;
-    const y = e.clientY + MENU_H > window.innerHeight ? e.clientY - MENU_H : e.clientY;
-    setContextMenu({ visible: true, x, y, game });
+    showContextMenu(e.clientX, e.clientY, game);
   };
 
   const handleRequestEdit = () => {
@@ -196,6 +224,9 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
                   <tr
                     key={isReadonly ? game.title : game.id}
                     onContextMenu={(e) => handleRowContextMenu(e, game)}
+                    onTouchStart={(e) => handleTouchStart(e, game)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                     className={`transition-colors ${own ? 'hover:bg-slate-800/40 cursor-context-menu' : 'cursor-default'}`}
                   >
                     <td className="py-3 px-3 text-center">
