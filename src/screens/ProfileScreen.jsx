@@ -36,6 +36,15 @@ export function ProfileScreen({ username, coins, isAdmin, onBack, onLogout, onOp
         <div className="text-center py-16 bg-slate-900/20 border border-dashed border-rose-500/30 rounded-xl">
           <p className="text-rose-400 font-medium mb-2">⚠️ Ошибка загрузки профиля</p>
           <p className="text-slate-500 text-sm mb-6">{error}</p>
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition-all cursor-pointer active:scale-95 text-sm"
+            >
+              🚪 Выйти из аккаунта
+            </button>
+          )}
         </div>
       </div>
     );

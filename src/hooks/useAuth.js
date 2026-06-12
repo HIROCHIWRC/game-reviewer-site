@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { authApi } from '../api';
+import { useState, useEffect } from 'react';
+import { authApi, registerOnUnauthorized } from '../api';
 
 export function useAuth() {
   const [user, setUser] = useState(() => {
@@ -68,6 +68,10 @@ export function useAuth() {
     localStorage.removeItem('isAdmin');
     setUser(null);
   };
+
+  useEffect(() => {
+    registerOnUnauthorized(logout);
+  }, []);
 
   return { user, authError, authLoading, login, register, logout, setCoins };
 }

@@ -1,5 +1,11 @@
 import { API_BASE } from './config';
 
+let onUnauthorized = null;
+
+export function registerOnUnauthorized(cb) {
+  onUnauthorized = cb;
+}
+
 // Получить токен из localStorage
 const getToken = () => localStorage.getItem('token');
 
@@ -21,7 +27,10 @@ async function request(path, options = {}) {
   }
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+  if (!res.ok) {
+    if (res.status === 401 && onUnauthorized) onUnauthorized();
+    throw new Error(data.error || 'Ошибка сервера');
+  }
   return data;
 }
 
@@ -39,7 +48,10 @@ async function requestFormData(path, formData) {
     throw new Error('Наши сервера утонули в какашках :(');
   }
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+  if (!res.ok) {
+    if (res.status === 401 && onUnauthorized) onUnauthorized();
+    throw new Error(data.error || 'Ошибка сервера');
+  }
   return data;
 }
 
