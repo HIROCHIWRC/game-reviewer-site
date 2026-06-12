@@ -8,7 +8,9 @@ router.use(authMiddleware);
 // GET /api/chat — последние 50 сообщений
 router.get('/', (req, res) => {
   const messages = db.prepare(
-    'SELECT id, user_id, username, text, created_at FROM messages ORDER BY created_at DESC LIMIT 50'
+    `SELECT m.id, m.user_id, m.username, m.text, m.created_at,
+      (SELECT COUNT(*) FROM games WHERE user_id = m.user_id) AS gameCount
+    FROM messages m ORDER BY m.created_at DESC LIMIT 50`
   ).all().reverse();
   res.json({ messages });
 });

@@ -50,7 +50,7 @@ export function DashboardScreen({ gamesCount, loadError, onRetry, onAddGame, onV
         <button
           type="button"
           onClick={onOpenCasino}
-          className="w-full h-[44px] bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold rounded-xl transition-all cursor-pointer active:scale-95 text-sm animate-glow-pulse"
+          className="w-full h-[44px] bg-gradient-to-r from-pink-600 to-violet-600 hover:brightness-110 text-white font-bold rounded-xl transition-all cursor-pointer active:scale-95 text-sm animate-glow-pulse"
         >
           🎲 Бурмалда
         </button>

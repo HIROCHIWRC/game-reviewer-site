@@ -7,7 +7,8 @@ import { MemeAdBanner } from './components/MemeAdBanner';
 import { IconButton } from './components/IconButton';
 import { CoinIcon } from './components/CoinIcon';
 import { Notification } from './components/Notification';
-import { gamesApi, chatApi } from './api';
+import { gamesApi, chatApi, authApi } from './api';
+import { getRank } from './constants/ranks';
 
 const AddGameScreen = React.lazy(() => import('./screens/AddGameScreen').then(m => ({ default: m.AddGameScreen })));
 const ViewGamesScreen = React.lazy(() => import('./screens/ViewGamesScreen').then(m => ({ default: m.ViewGamesScreen })));
@@ -40,6 +41,11 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
   const [openingCaseData, setOpeningCaseData] = useState(null);
   const [latestMessageId, setLatestMessageId] = useState(Number(localStorage.getItem('seenMessageId')) || 0);
   const [chatUnread, setChatUnread] = useState(false);
+  const [userGameCount, setUserGameCount] = useState(0);
+
+  useEffect(() => {
+    authApi.getProfile().then((data) => setUserGameCount(data.gameCount || 0)).catch(() => {});
+  }, []);
 
   const {
     games,
@@ -148,7 +154,7 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
           Game Reviewer
         </h1>
         <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
-          <span className="text-xs md:text-base font-semibold text-slate-300 truncate max-w-[80px] md:max-w-none">{user.username}</span>
+          <span className={`text-xs md:text-base font-semibold truncate max-w-[80px] md:max-w-none transition-all ${getRank(userGameCount).labelClass}`}>{user.username}</span>
           <IconButton
             variant="violet"
             size="sm"

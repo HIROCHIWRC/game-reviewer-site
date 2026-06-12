@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BackButton } from '../components/BackButton';
 import { chatApi } from '../api';
+import { getRank } from '../constants/ranks';
 
 const PAGE_SIZE = 30;
 
@@ -82,7 +83,9 @@ export function ChatScreen({ username, onBack, onViewProfile }) {
             ↑ Показать предыдущие ({messages.length - visibleCount} шт.)
           </button>
         )}
-        {visible.map((m) => (
+        {visible.map((m) => {
+          const rank = getRank(m.gameCount || 0);
+          return (
           <div
             key={m.id}
             className={`px-4 py-2.5 rounded-xl text-sm leading-relaxed ${
@@ -95,7 +98,7 @@ export function ChatScreen({ username, onBack, onViewProfile }) {
               <button
                 type="button"
                 onClick={() => onViewProfile?.(m.username)}
-                className="text-xs font-bold text-violet-400 hover:text-violet-300 hover:underline cursor-pointer"
+                className={`text-xs font-bold hover:underline cursor-pointer transition-colors ${rank.labelClass}`}
               >
                 {m.username}
               </button>
@@ -103,7 +106,8 @@ export function ChatScreen({ username, onBack, onViewProfile }) {
             </div>
             <p className="text-slate-200 break-words">{m.text}</p>
           </div>
-        ))}
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 
