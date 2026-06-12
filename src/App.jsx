@@ -304,6 +304,9 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
       </main>
 
       <Notification notification={notification} onClose={clearNotification} />
+      <span className="fixed bottom-2 right-3 text-[11px] text-slate-700/50 select-none pointer-events-none">
+        v1.0.0
+      </span>
     </div>
   );
 }
