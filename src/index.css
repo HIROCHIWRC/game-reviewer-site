@@ -19,8 +19,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% { filter: drop-shadow(0 0 3px #f472b6) drop-shadow(0 0 8px #a855f7) drop-shadow(0 0 15px #6366f1); }
-  50% { filter: drop-shadow(0 0 5px #f472b6) drop-shadow(0 0 12px #a855f7) drop-shadow(0 0 25px #6366f1); }
+  0%, 100% { box-shadow: 0 0 3px #f472b6, 0 0 8px #a855f7, 0 0 15px #6366f1; }
+  50% { box-shadow: 0 0 5px #f472b6, 0 0 12px #a855f7, 0 0 25px #6366f1; }
 }
 
 .animate-glow-pulse {
