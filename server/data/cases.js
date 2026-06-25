@@ -32,16 +32,16 @@ const CASES = [
   {
     id: 'best',
     name: 'Крутой кейс',
-    price: 15,
+    price: 10,
     image: '/cases/best-case.png',
     drops: [
-      { rarity: 'white', weight: 28 },
-      { rarity: 'sky',   weight: 25 },
+      { rarity: 'white', weight: 22 },
+      { rarity: 'sky',   weight: 22 },
       { rarity: 'blue',  weight: 22 },
-      { rarity: 'purple', weight: 14 },
-      { rarity: 'pink',  weight: 6 },
-      { rarity: 'red',   weight: 3 },
-      { rarity: 'gold',  weight: 2 },
+      { rarity: 'purple', weight: 15 },
+      { rarity: 'pink',  weight: 9 },
+      { rarity: 'red',   weight: 5 },
+      { rarity: 'gold',  weight: 5 },
     ],
   },
 ];
