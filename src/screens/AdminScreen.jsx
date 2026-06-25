@@ -349,22 +349,24 @@ function SuggestionsPanel() {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState(null);
   const [filter, setFilter] = useState('pending');
+  const [loadKey, setLoadKey] = useState(0);
 
-  const load = () => {
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     adminApi.getSuggestions(filter).then((data) => {
-      setSuggestions(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  };
+      if (!cancelled) { setSuggestions(data); setLoading(false); }
+    }).catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [filter, loadKey]);
 
-  useEffect(() => { load(); }, [filter]);
+  const reload = () => setLoadKey((k) => k + 1);
 
   const handleApprove = async (id) => {
     try {
       const data = await adminApi.approveSuggestion(id);
       setResult(data.message);
-      load();
+      reload();
     } catch (err) {
       setResult(`❌ ${err.message}`);
     }
@@ -374,7 +376,7 @@ function SuggestionsPanel() {
     try {
       const data = await adminApi.rejectSuggestion(id);
       setResult(data.message);
-      load();
+      reload();
     } catch (err) {
       setResult(`❌ ${err.message}`);
     }

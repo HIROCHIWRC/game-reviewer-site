@@ -91,7 +91,7 @@ router.post('/open', async (req, res) => {
   if (balance < caseData.price) return res.status(400).json({ error: 'Недостаточно монет' });
 
   const skin = pickSkin(caseData);
-  const [updateResult, insertResult] = await db.batch([
+  const [_, insertResult] = await db.batch([
     { sql: 'UPDATE users SET coins = ROUND(coins - ?, 2) WHERE id = ?', args: [caseData.price, req.user.userId] },
     { sql: 'INSERT INTO user_items (user_id, skin_name, skin_rarity, skin_value, skin_image, case_type) VALUES (?, ?, ?, ?, ?, ?)', args: [req.user.userId, skin.name, skin.rarity, skin.value, skin.image, caseId] },
   ]);
