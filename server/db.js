@@ -6,12 +6,12 @@ const db = createClient({
 });
 
 db.initDb = async function () {
+  // Turso включает проверку FK по умолчанию (в отличие от обычного SQLite).
+  // Отключаем, чтобы старые токены не ломали запросы.
+  await db.execute('PRAGMA foreign_keys = OFF');
+
   await db.batch([
-    `DROP TABLE IF EXISTS messages`,
-    `DROP TABLE IF EXISTS user_items`,
-    `DROP TABLE IF EXISTS games`,
-    `DROP TABLE IF EXISTS users`,
-    `CREATE TABLE users (
+    `CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
@@ -19,7 +19,7 @@ db.initDb = async function () {
       coins INTEGER DEFAULT 0,
       is_admin INTEGER DEFAULT 0
     )`,
-    `CREATE TABLE games (
+    `CREATE TABLE IF NOT EXISTS games (
       id TEXT PRIMARY KEY,
       user_id INTEGER NOT NULL,
       title TEXT NOT NULL,
@@ -36,7 +36,7 @@ db.initDb = async function () {
       cover_url TEXT DEFAULT '',
       poster_url TEXT DEFAULT ''
     )`,
-    `CREATE TABLE user_items (
+    `CREATE TABLE IF NOT EXISTS user_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       skin_name TEXT NOT NULL,
@@ -47,7 +47,7 @@ db.initDb = async function () {
       opened_at TEXT DEFAULT (datetime('now')),
       is_equipped INTEGER DEFAULT 0
     )`,
-    `CREATE TABLE messages (
+    `CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       username TEXT NOT NULL,
