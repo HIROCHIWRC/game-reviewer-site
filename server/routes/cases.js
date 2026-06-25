@@ -87,8 +87,6 @@ router.post('/open', async (req, res) => {
   const balance = Math.round((row?.coins || 0) * 100) / 100;
   if (balance < caseData.price) return res.status(400).json({ error: 'Недостаточно монет' });
 
-  await db.execute({ sql: 'UPDATE users SET coins = ROUND(coins - ?, 2) WHERE id = ?', args: [caseData.price, req.user.userId] });
-
   const skin = pickSkin(caseData);
   const [updateResult, insertResult] = await db.batch([
     { sql: 'UPDATE users SET coins = ROUND(coins - ?, 2) WHERE id = ?', args: [caseData.price, req.user.userId] },
