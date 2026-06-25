@@ -29,6 +29,7 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, game: null });
   const [deleteModal, setDeleteModal] = useState({ visible: false, gameId: null, gameTitle: '' });
   const touchTimer = useRef(null);
+  const longPressed = useRef(false);
 
   const handleCloseContextMenu = () => setContextMenu((prev) => ({ ...prev, visible: false }));
 
@@ -45,7 +46,9 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
 
   const handleTouchStart = (e, game) => {
     if (scope === 'all' || !isOwnGame(game)) return;
+    longPressed.current = false;
     touchTimer.current = setTimeout(() => {
+      longPressed.current = true;
       const touch = e.touches[0];
       showContextMenu(touch.clientX, touch.clientY, game);
     }, 500);
@@ -63,6 +66,14 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
       clearTimeout(touchTimer.current);
       touchTimer.current = null;
     }
+  };
+
+  const handleRowClick = (game) => {
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
+    onOpenCard(game);
   };
 
   const handleSearchChange = (e) => { setSearchQuery(e.target.value); setPage(1); };
@@ -100,6 +111,7 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
       .sort((a, b) => {
         if (sortBy === '🏆 Сначала топовые') return b.scores.overall - a.scores.overall;
         if (sortBy === '📉 Сначала похуже') return a.scores.overall - b.scores.overall;
+        if (sortBy === '📊 Больше всего отзывов') return (b.reviewCount || 1) - (a.reviewCount || 1);
         if (sortBy === '🔤 По алфавиту (А-Я)') return a.title.localeCompare(b.title);
         return 0;
       });
@@ -223,11 +235,12 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
                 return (
                   <tr
                     key={isReadonly ? game.title : game.id}
+                    onClick={() => handleRowClick(game)}
                     onContextMenu={(e) => handleRowContextMenu(e, game)}
                     onTouchStart={(e) => handleTouchStart(e, game)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    className={`transition-colors ${own ? 'hover:bg-slate-800/40 cursor-context-menu' : 'cursor-default'}`}
+                    className={`transition-colors cursor-pointer ${own ? 'hover:bg-slate-800/40' : 'hover:bg-slate-800/20'}`}
                   >
                     <td className="py-3 px-3 text-center">
                       <div className="relative w-9 h-9 mx-auto">
@@ -246,9 +259,8 @@ export function ViewGamesScreen({ games, loadError, onRetry, scope, onScopeChang
                       </div>
                     </td>
                     <td
-                      className="py-3.5 px-4 font-bold text-slate-200 max-w-[160px] truncate cursor-pointer hover:text-violet-400 transition-colors"
+                      className="py-3.5 px-4 font-bold text-slate-200 max-w-[160px] truncate"
                       title={game.title}
-                      onClick={() => onOpenCard(game)}
                     >
                       {game.title}
                     </td>

@@ -388,4 +388,38 @@ router.delete('/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+// GET /api/games/comments — получить комментарии к игре по названию
+router.get('/comments', async (req, res) => {
+  const title = req.query.title;
+  if (!title) return res.status(400).json({ error: 'Укажите название игры' });
+  const result = await db.execute({
+    sql: `SELECT gc.*, u.username,
+      (SELECT COUNT(*) FROM games WHERE user_id = gc.user_id) as commenter_game_count
+    FROM game_comments gc JOIN users u ON u.id = gc.user_id
+    WHERE gc.game_title = ? ORDER BY gc.created_at ASC`,
+    args: [title],
+  });
+  res.json(result.rows.map((row) => ({
+    id: row.id,
+    text: row.text,
+    username: row.username,
+    gameCount: row.commenter_game_count,
+    createdAt: row.created_at,
+  })));
+});
+
+// POST /api/games/comment — оставить комментарий
+router.post('/comment', async (req, res) => {
+  const { title, text } = req.body;
+  if (!title) return res.status(400).json({ error: 'Укажите название игры' });
+  if (!text || typeof text !== 'string') return res.status(400).json({ error: 'Укажите текст' });
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 500) return res.status(400).json({ error: 'Текст от 1 до 500 символов' });
+  await db.execute({
+    sql: 'INSERT INTO game_comments (game_title, user_id, text) VALUES (?, ?, ?)',
+    args: [title, req.user.userId, trimmed],
+  });
+  res.status(201).json({ ok: true });
+});
+
 module.exports = router;

@@ -63,6 +63,13 @@ db.initDb = async function () {
       status TEXT DEFAULT 'pending',
       created_at TEXT DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS game_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_title TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      text TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_games_user_title ON games(user_id, title)`,
   ]);
 

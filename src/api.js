@@ -131,4 +131,10 @@ export const gamesApi = {
 
   remove: (id) =>
     request(`/games/${id}`, { method: 'DELETE' }),
+
+  addComment: (title, text) =>
+    request('/games/comment', { method: 'POST', body: JSON.stringify({ title, text }) }),
+
+  getComments: (title) =>
+    request(`/games/comments?title=${encodeURIComponent(title)}`),
 };

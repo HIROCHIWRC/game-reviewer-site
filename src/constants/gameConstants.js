@@ -9,6 +9,7 @@ export const FILTER_GENRE_OPTIONS = ['Все жанры', ...GENRES];
 export const SORT_OPTIONS = [
   '🏆 Сначала топовые',
   '📉 Сначала похуже',
+  '📊 Больше всего отзывов',
   '🔤 По алфавиту (А-Я)',
 ];
 

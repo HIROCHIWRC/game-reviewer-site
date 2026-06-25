@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { BackButton } from '../components/BackButton';
 import { ScoreBadge } from '../components/ScoreBadge';
 import { assetUrl } from '../config';
 import { calculateOverallScore } from '../utils/scoreUtils';
 import { getRank } from '../constants/ranks';
+import { gamesApi } from '../api';
 
 function avg(arr) {
   const vals = arr.filter((v) => v !== null);
@@ -90,6 +92,30 @@ export function GameCardScreen({ games, onBack, onViewProfile }) {
   });
   const hasComments = allComments.some((c) => c.text);
 
+  const [communityComments, setCommunityComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const loadComments = () => {
+    gamesApi.getComments(game.title).then((data) => setCommunityComments(data)).catch(() => {});
+  };
+
+  useEffect(() => { loadComments(); }, [game.title]);
+
+  const handleSendComment = async () => {
+    const trimmed = newComment.trim();
+    if (!trimmed) return;
+    setSending(true);
+    try {
+      await gamesApi.addComment(game.title, trimmed);
+      setNewComment('');
+      loadComments();
+    } catch (err) {
+      alert(err.message);
+    }
+    setSending(false);
+  };
+
   return (
     <div className="py-2">
       <BackButton onClick={onBack} />
@@ -150,12 +176,59 @@ export function GameCardScreen({ games, onBack, onViewProfile }) {
         </div>
       </div>
 
-      {/* Комментарии — на всю ширину */}
+      {/* Комментарии обзоров */}
       <div className="mt-8">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
-          💬 Комментарии {hasComments && `(${allComments.filter((c) => c.text).length})`}
+          💬 Комментарии из обзоров {hasComments && `(${allComments.filter((c) => c.text).length})`}
         </h3>
         <CommentSection comments={allComments} onViewProfile={onViewProfile} />
+      </div>
+
+      {/* Комментарии сообщества */}
+      <div className="mt-8">
+        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
+          🗨️ Обсуждение {communityComments.length > 0 && `(${communityComments.length})`}
+        </h3>
+        <div className="space-y-3 mb-4">
+          {communityComments.length === 0 && (
+            <p className="text-sm text-slate-500 italic">Пока нет обсуждений. Будь первым!</p>
+          )}
+          {communityComments.map((c) => {
+            const rank = getRank(c.gameCount || 0);
+            return (
+              <div key={c.id} className="bg-slate-900/40 border border-slate-700/40 rounded-xl p-4">
+                <button
+                  type="button"
+                  onClick={() => onViewProfile(c.username)}
+                  className={`text-sm font-bold tracking-wide mb-1 cursor-pointer transition-colors ${rank.labelClass} hover:opacity-80`}
+                >
+                  {c.username}
+                </button>
+                <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words">{c.text}</p>
+                <p className="text-[10px] text-slate-600 mt-1">{c.createdAt?.slice(0, 16).replace('T', ' ')}</p>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex gap-2">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Написать комментарий..."
+            maxLength={500}
+            rows={2}
+            className="flex-1 bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-violet-500 resize-none"
+          />
+          <button
+            type="button"
+            onClick={handleSendComment}
+            disabled={!newComment.trim() || sending}
+            className="self-end px-4 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-xl cursor-pointer disabled:cursor-not-allowed active:scale-95 transition-all text-sm"
+          >
+            {sending ? '⏳' : '📤'}
+          </button>
+        </div>
+        <p className="text-right text-[10px] text-slate-600 mt-1">{newComment.length}/500</p>
       </div>
 
     </div>
