@@ -1,6 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
 const authMiddleware = require('../middleware/auth');
 
@@ -100,6 +102,30 @@ router.get('/profile/:username', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
   const data = await getUserData(user.id);
   if (!data) return res.status(404).json({ error: 'Пользователь не найден' });
+
+  if (req.query.includeGames === 'true') {
+    const gamesResult = await db.execute({ sql: 'SELECT * FROM games WHERE user_id = ? ORDER BY score_overall DESC', args: [user.id] });
+    const COVERS_DIR = path.join(__dirname, '..', 'public', 'covers');
+    data.games = gamesResult.rows.map((row) => {
+      const game = {
+        id: row.id, title: row.title, genre: row.genre,
+        scores: { gameplay: row.score_gameplay, atmosphere: row.score_atmosphere, story: row.score_story, music: row.score_music, technical: row.score_technical, impression: row.score_impression, overall: row.score_overall },
+        comment: row.comment || '',
+        savedAt: row.saved_at,
+        coverUrl: row.cover_url || '',
+        posterUrl: row.poster_url || '',
+      };
+      // fallback битых локальных путей
+      if (game.coverUrl?.startsWith('/covers/') && !fs.existsSync(path.join(COVERS_DIR, path.basename(game.coverUrl)))) {
+        game.coverUrl = row.cover_source_url || '';
+      }
+      if (game.posterUrl?.startsWith('/covers/') && !fs.existsSync(path.join(COVERS_DIR, path.basename(game.posterUrl)))) {
+        game.posterUrl = row.poster_source_url || '';
+      }
+      return game;
+    });
+  }
+
   res.json(data);
 });
 

@@ -64,7 +64,7 @@ export const authApi = {
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
 
   getProfile: () => request('/auth/profile'),
-  getUserProfile: (username) => request(`/auth/profile/${encodeURIComponent(username)}`),
+  getUserProfile: (username) => request(`/auth/profile/${encodeURIComponent(username)}?includeGames=true`),
 };
 
 // --- Users ---

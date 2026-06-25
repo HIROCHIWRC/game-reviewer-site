@@ -226,6 +226,12 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
                 key={viewProfileUsername}
                 profileUsername={viewProfileUsername}
                 onBack={() => setCurrentScreen(profileReturnScreen)}
+                onOpenCard={(game) => {
+                  setCardGames([game]);
+                  setCardError(null);
+                  setCardLoading(false);
+                  setCurrentScreen('game-card');
+                }}
               />
             )}
             {currentScreen === 'leaderboard' && (

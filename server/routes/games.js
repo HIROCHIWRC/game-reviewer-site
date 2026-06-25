@@ -35,6 +35,8 @@ function dbRowToGame(row) {
     savedAt: row.saved_at,
     coverUrl: row.cover_url || '',
     posterUrl: row.poster_url || '',
+    coverSource: row.cover_source_url || '',
+    posterSource: row.poster_source_url || '',
   };
 }
 
@@ -106,7 +108,16 @@ router.get('/', async (req, res) => {
     return res.json(games);
   }
   const result = await db.execute({ sql: 'SELECT * FROM games WHERE user_id = ? ORDER BY score_overall DESC', args: [req.user.userId] });
-  res.json(result.rows.map(dbRowToGame));
+  const games = result.rows.map(dbRowToGame);
+  for (const game of games) {
+    if (game.coverUrl?.startsWith('/covers/') && !fs.existsSync(path.join(COVERS_DIR, path.basename(game.coverUrl)))) {
+      game.coverUrl = game.coverSource || '';
+    }
+    if (game.posterUrl?.startsWith('/covers/') && !fs.existsSync(path.join(COVERS_DIR, path.basename(game.posterUrl)))) {
+      game.posterUrl = game.posterSource || '';
+    }
+  }
+  res.json(games);
 });
 
 // GET /api/games/titles — список существующих названий для автоподсказки
