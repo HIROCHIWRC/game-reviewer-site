@@ -143,7 +143,7 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
   const isWideScreen = currentScreen === 'view-games' || currentScreen === 'game-card' || currentScreen === 'view-profile' || currentScreen === 'leaderboard' || currentScreen === 'casino' || currentScreen === 'inventory' || currentScreen === 'case-opening' || currentScreen === 'chat' || currentScreen === 'admin';
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-3 md:p-8 flex flex-col items-center select-none relative overflow-x-hidden">
+    <div className="min-h-screen bg-slate-900 text-slate-100 p-3 md:p-8 pb-20 xl:pb-3 flex flex-col items-center select-none relative overflow-x-hidden">
 
       <MemeAdBanner />
 
