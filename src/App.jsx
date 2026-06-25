@@ -309,7 +309,7 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
       <Notification notification={notification} onClose={clearNotification} />
       <SuggestMemeModal visible={showSuggestMeme} onClose={() => setShowSuggestMeme(false)} />
       <span className="fixed bottom-2 right-3 text-[11px] text-slate-700/50 select-none pointer-events-none">
-        v1.1.0
+        v1.2.1
       </span>
     </div>
   );

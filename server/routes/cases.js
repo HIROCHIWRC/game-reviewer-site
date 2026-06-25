@@ -47,7 +47,7 @@ router.get('/data', (req, res) => {
     drops: c.drops.map((d) => ({ rarity: d.rarity, label: RARITIES[d.rarity]?.label || '', hex: RARITIES[d.rarity]?.hex || '#666', weight: d.weight })),
     pool: buildPool(c),
   }));
-  res.json({ version: '1.0.2', cases });
+  res.json({ version: '1.2.1', cases });
 });
 
 // GET /api/cases/inventory
