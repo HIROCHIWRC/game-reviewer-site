@@ -141,23 +141,18 @@ router.delete('/users/:id', async (req, res) => {
     return res.status(400).json({ error: 'Нельзя удалить самого себя' });
   }
 
-  await db.execute('BEGIN');
-  try {
-    const delGames = await db.execute({ sql: 'DELETE FROM games WHERE user_id = ?', args: [userId] });
-    const delItems = await db.execute({ sql: 'DELETE FROM user_items WHERE user_id = ?', args: [userId] });
-    const delMsgs = await db.execute({ sql: 'DELETE FROM messages WHERE user_id = ?', args: [userId] });
-    await db.execute({ sql: 'DELETE FROM users WHERE id = ?', args: [userId] });
-    await db.execute('COMMIT');
-    res.json({
-      message: `Пользователь "${user.username}" удалён`,
-      deletedGames: delGames.rowsAffected,
-      deletedItems: delItems.rowsAffected,
-      deletedMessages: delMsgs.rowsAffected,
-    });
-  } catch (e) {
-    await db.execute('ROLLBACK');
-    throw e;
-  }
+  const results = await db.batch([
+    { sql: 'DELETE FROM games WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM user_items WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM messages WHERE user_id = ?', args: [userId] },
+    { sql: 'DELETE FROM users WHERE id = ?', args: [userId] },
+  ]);
+  res.json({
+    message: `Пользователь "${user.username}" удалён`,
+    deletedGames: results[0].rowsAffected,
+    deletedItems: results[1].rowsAffected,
+    deletedMessages: results[2].rowsAffected,
+  });
 });
 
 // PUT /api/admin/users/:id/coins — изменить монеты
