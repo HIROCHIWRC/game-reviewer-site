@@ -181,29 +181,7 @@ const COVERS_DIR = path.join(__dirname, '..', 'public', 'covers');
 try { fs.mkdirSync(COVERS_DIR, { recursive: true }); } catch {}
 
 async function downloadGameCovers(title, coverUrl, posterUrl) {
-  const slug = slugify(title);
-  if (!slug) return { coverUrl, posterUrl };
-
-  let localCover = coverUrl;
-  let localPoster = posterUrl;
-
-  if (coverUrl && !coverUrl.startsWith('/covers/')) {
-    const localPath = path.join(COVERS_DIR, `${slug}_icon.jpg`);
-    console.log(`[cover] Скачиваю иконку для "${title}": ${coverUrl} → ${slug}_icon.jpg`);
-    const ok = await downloadImage(coverUrl, localPath);
-    if (ok) localCover = `/covers/${slug}_icon.jpg`;
-    console.log(`[cover] Иконка ${ok ? 'скачана' : 'не скачалась'} для "${title}"`);
-  }
-
-  if (posterUrl && !posterUrl.startsWith('/covers/')) {
-    const localPath = path.join(COVERS_DIR, `${slug}_poster.jpg`);
-    console.log(`[cover] Скачиваю постер для "${title}": ${posterUrl} → ${slug}_poster.jpg`);
-    const ok = await downloadImage(posterUrl, localPath);
-    if (ok) localPoster = `/covers/${slug}_poster.jpg`;
-    console.log(`[cover] Постер ${ok ? 'скачан' : 'не скачался'} для "${title}"`);
-  }
-
-  return { coverUrl: localCover, posterUrl: localPoster };
+  return { coverUrl, posterUrl };
 }
 
 // GET /api/games/fetch-cover — поиск иконки и постера (без скачивания)
