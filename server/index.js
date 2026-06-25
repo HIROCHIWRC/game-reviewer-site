@@ -55,16 +55,16 @@ app.get('/api/memes/images', (req, res) => {
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-app.get('/api/users/leaderboard', (req, res) => {
-  const rows = db.prepare(`
+app.get('/api/users/leaderboard', async (req, res) => {
+  const result = await db.execute(`
     SELECT u.username, COUNT(g.id) as game_count,
       ROUND(AVG(g.score_overall), 2) as avg_score
     FROM users u
     LEFT JOIN games g ON g.user_id = u.id
     GROUP BY u.id, u.username
     ORDER BY game_count DESC
-  `).all();
-  res.json(rows);
+  `);
+  res.json(result.rows);
 });
 
 // Раздача статики фронта
@@ -80,6 +80,10 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`✅ Сервер запущен на http://localhost:${PORT}`);
-});
+async function start() {
+  await db.initDb();
+  app.listen(PORT, () => {
+    console.log(`✅ Сервер запущен на http://localhost:${PORT}`);
+  });
+}
+start();

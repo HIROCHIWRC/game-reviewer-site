@@ -6,26 +6,32 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // GET /api/chat — последние 50 сообщений
-router.get('/', (req, res) => {
-  const messages = db.prepare(
-    `SELECT m.id, m.user_id, m.username, m.text, m.created_at,
+router.get('/', async (req, res) => {
+  const result = await db.execute(`
+    SELECT m.id, m.user_id, m.username, m.text, m.created_at,
       (SELECT COUNT(*) FROM games WHERE user_id = m.user_id) AS gameCount
-    FROM messages m ORDER BY m.created_at DESC LIMIT 50`
-  ).all().reverse();
+    FROM messages m ORDER BY m.created_at DESC LIMIT 50
+  `);
+  const messages = result.rows.reverse();
   res.json({ messages });
 });
 
 // POST /api/chat — отправить сообщение
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { text } = req.body;
   if (!text || typeof text !== 'string') return res.status(400).json({ error: 'Текст сообщения обязателен' });
   const trimmed = text.trim().slice(0, 500);
   if (!trimmed) return res.status(400).json({ error: 'Сообщение не может быть пустым' });
 
-  const info = db.prepare('INSERT INTO messages (user_id, username, text) VALUES (?, ?, ?)')
-    .run(req.user.userId, req.user.username, trimmed);
+  const info = await db.execute({
+    sql: 'INSERT INTO messages (user_id, username, text) VALUES (?, ?, ?)',
+    args: [req.user.userId, req.user.username, trimmed],
+  });
 
-  const message = db.prepare('SELECT id, user_id, username, text, created_at FROM messages WHERE id = ?').get(info.lastInsertRowid);
+  const message = (await db.execute({
+    sql: 'SELECT id, user_id, username, text, created_at FROM messages WHERE id = ?',
+    args: [Number(info.lastInsertRowid)],
+  })).rows[0];
   res.status(201).json({ message });
 });
 

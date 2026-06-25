@@ -66,10 +66,10 @@ function dbRowToAggregated(row) {
 }
 
 // GET /api/games — получить игры (scope=my | scope=all)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const scope = req.query.scope || 'my';
   if (scope === 'all') {
-    const games = db.prepare(`
+    const result = await db.execute(`
       SELECT
         g.title,
         (SELECT genre FROM games WHERE title = g.title GROUP BY genre ORDER BY COUNT(*) DESC LIMIT 1) as genre,
@@ -87,35 +87,36 @@ router.get('/', (req, res) => {
         SUM(CASE WHEN g.score_music IS NULL THEN 1 ELSE 0 END) as music_null_count
       FROM games g
       GROUP BY g.title
-    `).all();
-    const result = games.map(dbRowToAggregated);
-    result.sort((a, b) => b.scores.overall - a.scores.overall);
-    return res.json(result);
+    `);
+    const games = result.rows.map(dbRowToAggregated);
+    games.sort((a, b) => b.scores.overall - a.scores.overall);
+    return res.json(games);
   }
-  const games = db.prepare('SELECT * FROM games WHERE user_id = ? ORDER BY score_overall DESC').all(req.user.userId);
-  res.json(games.map(dbRowToGame));
+  const result = await db.execute({ sql: 'SELECT * FROM games WHERE user_id = ? ORDER BY score_overall DESC', args: [req.user.userId] });
+  res.json(result.rows.map(dbRowToGame));
 });
 
 // GET /api/games/titles — список существующих названий для автоподсказки
-// GET /api/games/by-title/:title — все обзоры по названию (для карточки в режиме "Общий")
-router.get('/by-title/:title', (req, res) => {
-  const games = db.prepare(`
-    SELECT g.*, u.username,
-      (SELECT COUNT(*) FROM games WHERE user_id = g.user_id) as owner_game_count
-    FROM games g JOIN users u ON g.user_id = u.id
-    WHERE g.title = ? ORDER BY g.score_overall DESC
-  `).all(req.params.title);
-  res.json(games.map((row) => ({ ...dbRowToGame(row), owner: row.username, ownerGameCount: row.owner_game_count })));
-});
-
-router.get('/titles', (req, res) => {
-  const titles = db.prepare(`
+router.get('/titles', async (req, res) => {
+  const result = await db.execute(`
     SELECT title, (SELECT genre FROM games WHERE title = g.title GROUP BY genre ORDER BY COUNT(*) DESC LIMIT 1) as genre
     FROM games g
     GROUP BY g.title
     ORDER BY g.title
-  `).all();
-  res.json(titles);
+  `);
+  res.json(result.rows);
+});
+
+// GET /api/games/by-title/:title — все обзоры по названию (для карточки в режиме "Общий")
+router.get('/by-title/:title', async (req, res) => {
+  const result = await db.execute({
+    sql: `SELECT g.*, u.username,
+      (SELECT COUNT(*) FROM games WHERE user_id = g.user_id) as owner_game_count
+    FROM games g JOIN users u ON g.user_id = u.id
+    WHERE g.title = ? ORDER BY g.score_overall DESC`,
+    args: [req.params.title],
+  });
+  res.json(result.rows.map((row) => ({ ...dbRowToGame(row), owner: row.username, ownerGameCount: row.owner_game_count })));
 });
 
 function httpGet(url, headers = {}) {
@@ -213,17 +214,17 @@ router.get('/fetch-cover', async (req, res) => {
   const q = title.trim();
 
   // Проверяем, есть ли уже обложка в БД
-  const existing = db.prepare(`
-    SELECT cover_url, poster_url FROM games
-    WHERE title = ? AND (cover_url != '' OR poster_url != '')
-    ORDER BY
-      CASE WHEN cover_url != '' THEN 0 ELSE 1 END,
-      CASE WHEN poster_url != '' THEN 0 ELSE 1 END
-    LIMIT 1
-  `).get(q);
+  const existing = (await db.execute({
+    sql: `SELECT cover_url, poster_url FROM games
+      WHERE title = ? AND (cover_url != '' OR poster_url != '')
+      ORDER BY
+        CASE WHEN cover_url != '' THEN 0 ELSE 1 END,
+        CASE WHEN poster_url != '' THEN 0 ELSE 1 END
+      LIMIT 1`,
+    args: [q],
+  })).rows[0];
 
   if (existing) {
-    // Проверяем, что файлы реально есть на диске
     const coverFile = existing.cover_url ? path.join(COVERS_DIR, path.basename(existing.cover_url)) : null;
     const posterFile = existing.poster_url ? path.join(COVERS_DIR, path.basename(existing.poster_url)) : null;
     const coverOk = coverFile ? fs.existsSync(coverFile) : false;
@@ -239,7 +240,6 @@ router.get('/fetch-cover', async (req, res) => {
     console.log(`[cover] "${q}" — в БД есть запись, но файлы отсутствуют на диске`);
   }
 
-  // Проверяем, не остался ли файл на диске со старого fetch-cover (без записи в БД)
   const slug = slugify(q);
   if (slug) {
     const diskIcon = path.join(COVERS_DIR, `${slug}_icon.jpg`);
@@ -336,27 +336,27 @@ router.post('/', async (req, res) => {
   if (err) return res.status(400).json({ error: err });
   const { id, title, genre, scores, comment, savedAt, coverUrl, posterUrl } = req.body;
 
-  // Проверка на дубликат — один пользователь не может оценить одну игру дважды
-  const dup = db.prepare('SELECT id FROM games WHERE user_id = ? AND title = ?').get(req.user.userId, title.trim());
+  const dup = (await db.execute({ sql: 'SELECT id FROM games WHERE user_id = ? AND title = ?', args: [req.user.userId, title.trim()] })).rows[0];
   if (dup) return res.status(409).json({ error: 'Вы уже оценили эту игру' });
   console.log(`[games] POST "${title}" coverUrl=${coverUrl} posterUrl=${posterUrl}`);
   const covers = await downloadGameCovers(title.trim(), coverUrl, posterUrl);
   try {
-    db.prepare(`
-      INSERT INTO games (id, user_id, title, genre, score_gameplay, score_atmosphere, score_story, score_music, score_technical, score_impression, score_overall, comment, saved_at, cover_url, poster_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, req.user.userId, title.trim(), genre,
-      scores.gameplay, scores.atmosphere ?? null, scores.story ?? null, scores.music ?? null,
-      scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl);
+    await db.execute({
+      sql: `INSERT INTO games (id, user_id, title, genre, score_gameplay, score_atmosphere, score_story, score_music, score_technical, score_impression, score_overall, comment, saved_at, cover_url, poster_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, req.user.userId, title.trim(), genre,
+        scores.gameplay, scores.atmosphere ?? null, scores.story ?? null, scores.music ?? null,
+        scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl],
+    });
   } catch (e) {
     if (e.message?.includes('UNIQUE')) return res.status(409).json({ error: 'Вы уже оценили эту игру' });
     throw e;
   }
-  // Начисляем монеты: 2 за новую игру (первый обзор), 1 за обычный обзор
-  const count = db.prepare('SELECT COUNT(*) as cnt FROM games WHERE title = ?').get(title.trim()).cnt;
+  const countResult = await db.execute({ sql: 'SELECT COUNT(*) as cnt FROM games WHERE title = ?', args: [title.trim()] });
+  const count = countResult.rows[0].cnt;
   const reward = count === 1 ? 2 : 1;
-  db.prepare('UPDATE users SET coins = ROUND(coins + ?, 2) WHERE id = ?').run(reward, req.user.userId);
-  const newBalance = db.prepare('SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?').get(req.user.userId).coins;
+  await db.execute({ sql: 'UPDATE users SET coins = ROUND(coins + ?, 2) WHERE id = ?', args: [reward, req.user.userId] });
+  const newBalance = (await db.execute({ sql: 'SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0].coins;
   res.status(201).json({ ok: true, coins: newBalance, reward });
 });
 
@@ -366,23 +366,24 @@ router.put('/:id', async (req, res) => {
   if (err) return res.status(400).json({ error: err });
   const { title, genre, scores, comment, savedAt, coverUrl, posterUrl } = req.body;
   console.log(`[games] PUT "${title}" coverUrl=${coverUrl} posterUrl=${posterUrl}`);
-  const game = db.prepare('SELECT id FROM games WHERE id = ? AND user_id = ?').get(req.params.id, req.user.userId);
+  const game = (await db.execute({ sql: 'SELECT id FROM games WHERE id = ? AND user_id = ?', args: [req.params.id, req.user.userId] })).rows[0];
   if (!game) return res.status(404).json({ error: 'Игра не найдена' });
   const covers = await downloadGameCovers(title.trim(), coverUrl, posterUrl);
-  db.prepare(`
-    UPDATE games SET title = ?, genre = ?, score_gameplay = ?, score_atmosphere = ?, score_story = ?, score_music = ?, score_technical = ?, score_impression = ?, score_overall = ?, comment = ?, saved_at = ?, cover_url = ?, poster_url = ?
-    WHERE id = ? AND user_id = ?
-  `).run(title.trim(), genre,
-    scores.gameplay, scores.atmosphere ?? null, scores.story ?? null, scores.music ?? null,
-    scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl,
-    req.params.id, req.user.userId);
+  await db.execute({
+    sql: `UPDATE games SET title = ?, genre = ?, score_gameplay = ?, score_atmosphere = ?, score_story = ?, score_music = ?, score_technical = ?, score_impression = ?, score_overall = ?, comment = ?, saved_at = ?, cover_url = ?, poster_url = ?
+    WHERE id = ? AND user_id = ?`,
+    args: [title.trim(), genre,
+      scores.gameplay, scores.atmosphere ?? null, scores.story ?? null, scores.music ?? null,
+      scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl,
+      req.params.id, req.user.userId],
+  });
   res.json({ ok: true });
 });
 
 // DELETE /api/games/:id — удалить игру
-router.delete('/:id', (req, res) => {
-  const result = db.prepare('DELETE FROM games WHERE id = ? AND user_id = ?').run(req.params.id, req.user.userId);
-  if (result.changes === 0) return res.status(404).json({ error: 'Игра не найдена' });
+router.delete('/:id', async (req, res) => {
+  const result = await db.execute({ sql: 'DELETE FROM games WHERE id = ? AND user_id = ?', args: [req.params.id, req.user.userId] });
+  if (result.rowsAffected === 0) return res.status(404).json({ error: 'Игра не найдена' });
   res.json({ ok: true });
 });
 

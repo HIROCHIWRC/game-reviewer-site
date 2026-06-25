@@ -51,48 +51,58 @@ router.get('/data', (req, res) => {
 });
 
 // GET /api/cases/inventory
-router.get('/inventory', (req, res) => {
-  const items = db.prepare('SELECT id, skin_name, skin_rarity, skin_value, skin_image, case_type, opened_at, is_equipped FROM user_items WHERE user_id = ? ORDER BY opened_at DESC').all(req.user.userId);
-  res.json({ items: items.map(enrichItem) });
+router.get('/inventory', async (req, res) => {
+  const result = await db.execute({
+    sql: 'SELECT id, skin_name, skin_rarity, skin_value, skin_image, case_type, opened_at, is_equipped FROM user_items WHERE user_id = ? ORDER BY opened_at DESC',
+    args: [req.user.userId],
+  });
+  res.json({ items: result.rows.map(enrichItem) });
 });
 
 // POST /api/cases/sell
-router.post('/sell', (req, res) => {
+router.post('/sell', async (req, res) => {
   const { itemId } = req.body;
   if (!itemId) return res.status(400).json({ error: 'Нужен ID предмета' });
 
-  const item = db.prepare('SELECT id, user_id, skin_name, skin_value FROM user_items WHERE id = ?').get(itemId);
+  const item = (await db.execute({ sql: 'SELECT id, user_id, skin_name, skin_value FROM user_items WHERE id = ?', args: [itemId] })).rows[0];
   if (!item) return res.status(404).json({ error: 'Предмет не найден' });
   if (item.user_id !== req.user.userId) return res.status(403).json({ error: 'Это не твой предмет' });
 
-  db.transaction(() => {
-    db.prepare('DELETE FROM user_items WHERE id = ?').run(itemId);
-    db.prepare('UPDATE users SET coins = ROUND(coins + ?, 2) WHERE id = ?').run(item.skin_value, req.user.userId);
-  })();
+  await db.execute('BEGIN');
+  try {
+    await db.execute({ sql: 'DELETE FROM user_items WHERE id = ?', args: [itemId] });
+    await db.execute({ sql: 'UPDATE users SET coins = ROUND(coins + ?, 2) WHERE id = ?', args: [item.skin_value, req.user.userId] });
+    await db.execute('COMMIT');
+  } catch (e) {
+    await db.execute('ROLLBACK');
+    throw e;
+  }
 
-  const newBalance = db.prepare('SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?').get(req.user.userId).coins;
+  const newBalance = (await db.execute({ sql: 'SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0].coins;
   res.json({ ok: true, coins: newBalance, sold: item.skin_name, value: item.skin_value });
 });
 
 // POST /api/cases/open
-router.post('/open', (req, res) => {
+router.post('/open', async (req, res) => {
   const { caseId } = req.body;
   const caseData = CASES.find((c) => c.id === caseId);
   if (!caseData) return res.status(400).json({ error: 'Кейс не найден' });
 
-  const row = db.prepare('SELECT coins FROM users WHERE id = ?').get(req.user.userId);
+  const row = (await db.execute({ sql: 'SELECT coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0];
   const balance = Math.round((row?.coins || 0) * 100) / 100;
   if (balance < caseData.price) return res.status(400).json({ error: 'Недостаточно монет' });
 
-  db.prepare('UPDATE users SET coins = ROUND(coins - ?, 2) WHERE id = ?').run(caseData.price, req.user.userId);
+  await db.execute({ sql: 'UPDATE users SET coins = ROUND(coins - ?, 2) WHERE id = ?', args: [caseData.price, req.user.userId] });
 
   const skin = pickSkin(caseData);
-  const insert = db.prepare('INSERT INTO user_items (user_id, skin_name, skin_rarity, skin_value, skin_image, case_type) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(req.user.userId, skin.name, skin.rarity, skin.value, skin.image, caseId);
+  const insert = await db.execute({
+    sql: 'INSERT INTO user_items (user_id, skin_name, skin_rarity, skin_value, skin_image, case_type) VALUES (?, ?, ?, ?, ?, ?)',
+    args: [req.user.userId, skin.name, skin.rarity, skin.value, skin.image, caseId],
+  });
 
-  const newBalance = db.prepare('SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?').get(req.user.userId).coins;
+  const newBalance = (await db.execute({ sql: 'SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0].coins;
 
-  res.json({ skin: { ...skin, itemId: insert.lastInsertRowid }, coins: newBalance, neighbors: pickNeighbors(caseId) });
+  res.json({ skin: { ...skin, itemId: Number(insert.lastInsertRowid) }, coins: newBalance, neighbors: pickNeighbors(caseId) });
 });
 
 module.exports = router;

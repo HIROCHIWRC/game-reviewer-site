@@ -112,14 +112,14 @@ router.delete('/memes/images/:filename', (req, res) => {
 });
 
 // GET /api/admin/users — список всех пользователей
-router.get('/users', (req, res) => {
-  const users = db.prepare(`
+router.get('/users', async (req, res) => {
+  const result = await db.execute(`
     SELECT u.id, u.username, u.created_at, u.coins, u.is_admin,
       (SELECT COUNT(*) FROM games WHERE user_id = u.id) as review_count
     FROM users u
     ORDER BY u.id ASC
-  `).all();
-  res.json(users.map((u) => ({
+  `);
+  res.json(result.rows.map((u) => ({
     id: u.id,
     username: u.username,
     createdAt: u.created_at,
@@ -130,33 +130,38 @@ router.get('/users', (req, res) => {
 });
 
 // DELETE /api/admin/users/:id — удалить пользователя + его отзывы + инвентарь
-router.delete('/users/:id', (req, res) => {
+router.delete('/users/:id', async (req, res) => {
   const userId = Number(req.params.id);
   if (!userId) return res.status(400).json({ error: 'Неверный ID' });
 
-  const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(userId);
+  const user = (await db.execute({ sql: 'SELECT id, username FROM users WHERE id = ?', args: [userId] })).rows[0];
   if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
-  // Нельзя удалить самого себя
   if (user.id === req.user.userId) {
     return res.status(400).json({ error: 'Нельзя удалить самого себя' });
   }
 
-  const delGames = db.prepare('DELETE FROM games WHERE user_id = ?').run(userId);
-  const delItems = db.prepare('DELETE FROM user_items WHERE user_id = ?').run(userId);
-  const delMsgs = db.prepare('DELETE FROM messages WHERE user_id = ?').run(userId);
-  db.prepare('DELETE FROM users WHERE id = ?').run(userId);
-
-  res.json({
-    message: `Пользователь "${user.username}" удалён`,
-    deletedGames: delGames.changes,
-    deletedItems: delItems.changes,
-    deletedMessages: delMsgs.changes,
-  });
+  await db.execute('BEGIN');
+  try {
+    const delGames = await db.execute({ sql: 'DELETE FROM games WHERE user_id = ?', args: [userId] });
+    const delItems = await db.execute({ sql: 'DELETE FROM user_items WHERE user_id = ?', args: [userId] });
+    const delMsgs = await db.execute({ sql: 'DELETE FROM messages WHERE user_id = ?', args: [userId] });
+    await db.execute({ sql: 'DELETE FROM users WHERE id = ?', args: [userId] });
+    await db.execute('COMMIT');
+    res.json({
+      message: `Пользователь "${user.username}" удалён`,
+      deletedGames: delGames.rowsAffected,
+      deletedItems: delItems.rowsAffected,
+      deletedMessages: delMsgs.rowsAffected,
+    });
+  } catch (e) {
+    await db.execute('ROLLBACK');
+    throw e;
+  }
 });
 
 // PUT /api/admin/users/:id/coins — изменить монеты
-router.put('/users/:id/coins', (req, res) => {
+router.put('/users/:id/coins', async (req, res) => {
   const userId = Number(req.params.id);
   const { coins } = req.body;
 
@@ -168,10 +173,10 @@ router.put('/users/:id/coins', (req, res) => {
     return res.status(400).json({ error: 'Монеты от 0 до 999999' });
   }
 
-  const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(userId);
+  const user = (await db.execute({ sql: 'SELECT id, username FROM users WHERE id = ?', args: [userId] })).rows[0];
   if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
-  db.prepare('UPDATE users SET coins = ? WHERE id = ?').run(Math.round(coins * 100) / 100, userId);
+  await db.execute({ sql: 'UPDATE users SET coins = ? WHERE id = ?', args: [Math.round(coins * 100) / 100, userId] });
   res.json({ message: `Монеты пользователя "${user.username}" изменены на ${coins}`, coins });
 });
 
