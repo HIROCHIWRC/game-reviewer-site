@@ -356,8 +356,9 @@ router.post('/', async (req, res) => {
   const count = countResult.rows[0].cnt;
   const reward = count === 1 ? 2 : 1;
   await db.execute({ sql: 'UPDATE users SET coins = ROUND(coins + ?, 2) WHERE id = ?', args: [reward, req.user.userId] });
-  const newBalance = (await db.execute({ sql: 'SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0].coins;
-  res.status(201).json({ ok: true, coins: newBalance, reward });
+  const userRow = (await db.execute({ sql: 'SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0];
+  if (!userRow) return res.status(401).json({ error: 'Пользователь не найден. Войдите заново.' });
+  res.status(201).json({ ok: true, coins: userRow.coins, reward });
 });
 
 // PUT /api/games/:id — обновить игру
