@@ -7,7 +7,11 @@ const db = createClient({
 
 db.initDb = async function () {
   await db.batch([
-    `CREATE TABLE IF NOT EXISTS users (
+    `DROP TABLE IF EXISTS messages`,
+    `DROP TABLE IF EXISTS user_items`,
+    `DROP TABLE IF EXISTS games`,
+    `DROP TABLE IF EXISTS users`,
+    `CREATE TABLE users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
@@ -15,7 +19,7 @@ db.initDb = async function () {
       coins INTEGER DEFAULT 0,
       is_admin INTEGER DEFAULT 0
     )`,
-    `CREATE TABLE IF NOT EXISTS games (
+    `CREATE TABLE games (
       id TEXT PRIMARY KEY,
       user_id INTEGER NOT NULL,
       title TEXT NOT NULL,
@@ -30,10 +34,9 @@ db.initDb = async function () {
       comment TEXT DEFAULT '',
       saved_at TEXT NOT NULL,
       cover_url TEXT DEFAULT '',
-      poster_url TEXT DEFAULT '',
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      poster_url TEXT DEFAULT ''
     )`,
-    `CREATE TABLE IF NOT EXISTS user_items (
+    `CREATE TABLE user_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       skin_name TEXT NOT NULL,
@@ -42,16 +45,14 @@ db.initDb = async function () {
       skin_image TEXT NOT NULL DEFAULT '',
       case_type TEXT NOT NULL,
       opened_at TEXT DEFAULT (datetime('now')),
-      is_equipped INTEGER DEFAULT 0,
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      is_equipped INTEGER DEFAULT 0
     )`,
-    `CREATE TABLE IF NOT EXISTS messages (
+    `CREATE TABLE messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       username TEXT NOT NULL,
       text TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      created_at TEXT DEFAULT (datetime('now'))
     )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_games_user_title ON games(user_id, title)`,
   ]);
