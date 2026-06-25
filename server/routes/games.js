@@ -62,6 +62,8 @@ function dbRowToAggregated(row) {
     reviewCount: total,
     coverUrl: row.cover_url || '',
     posterUrl: row.poster_url || '',
+    coverSource: row.cover_source_url || '',
+    posterSource: row.poster_source_url || '',
   };
 }
 
@@ -75,6 +77,8 @@ router.get('/', async (req, res) => {
         (SELECT genre FROM games WHERE title = g.title GROUP BY genre ORDER BY COUNT(*) DESC LIMIT 1) as genre,
         (SELECT cover_url FROM games WHERE title = g.title AND cover_url != '' LIMIT 1) as cover_url,
         (SELECT poster_url FROM games WHERE title = g.title AND poster_url != '' LIMIT 1) as poster_url,
+        (SELECT cover_source_url FROM games WHERE title = g.title AND cover_source_url != '' LIMIT 1) as cover_source_url,
+        (SELECT poster_source_url FROM games WHERE title = g.title AND poster_source_url != '' LIMIT 1) as poster_source_url,
         AVG(g.score_gameplay) as score_gameplay,
         AVG(g.score_atmosphere) as score_atmosphere,
         AVG(g.score_story) as score_story,
@@ -89,6 +93,15 @@ router.get('/', async (req, res) => {
       GROUP BY g.title
     `);
     const games = result.rows.map(dbRowToAggregated);
+    // Если локальный файл обложки пропал (рестарт Railway), используем оригинальный URL
+    for (const game of games) {
+      if (game.coverUrl?.startsWith('/covers/') && !fs.existsSync(path.join(COVERS_DIR, path.basename(game.coverUrl)))) {
+        game.coverUrl = game.coverSource || '';
+      }
+      if (game.posterUrl?.startsWith('/covers/') && !fs.existsSync(path.join(COVERS_DIR, path.basename(game.posterUrl)))) {
+        game.posterUrl = game.posterSource || '';
+      }
+    }
     games.sort((a, b) => b.scores.overall - a.scores.overall);
     return res.json(games);
   }
@@ -181,7 +194,29 @@ const COVERS_DIR = path.join(__dirname, '..', 'public', 'covers');
 try { fs.mkdirSync(COVERS_DIR, { recursive: true }); } catch {}
 
 async function downloadGameCovers(title, coverUrl, posterUrl) {
-  return { coverUrl, posterUrl };
+  const slug = slugify(title);
+  if (!slug) return { coverUrl, posterUrl, coverSource: coverUrl, posterSource: posterUrl };
+
+  let localCover = coverUrl;
+  let localPoster = posterUrl;
+
+  if (coverUrl && !coverUrl.startsWith('/covers/')) {
+    const localPath = path.join(COVERS_DIR, `${slug}_icon.jpg`);
+    console.log(`[cover] Скачиваю иконку для "${title}": ${coverUrl} → ${slug}_icon.jpg`);
+    const ok = await downloadImage(coverUrl, localPath);
+    if (ok) localCover = `/covers/${slug}_icon.jpg`;
+    console.log(`[cover] Иконка ${ok ? 'скачана' : 'не скачалась'} для "${title}"`);
+  }
+
+  if (posterUrl && !posterUrl.startsWith('/covers/')) {
+    const localPath = path.join(COVERS_DIR, `${slug}_poster.jpg`);
+    console.log(`[cover] Скачиваю постер для "${title}": ${posterUrl} → ${slug}_poster.jpg`);
+    const ok = await downloadImage(posterUrl, localPath);
+    if (ok) localPoster = `/covers/${slug}_poster.jpg`;
+    console.log(`[cover] Постер ${ok ? 'скачан' : 'не скачался'} для "${title}"`);
+  }
+
+  return { coverUrl: localCover, posterUrl: localPoster, coverSource: coverUrl, posterSource: posterUrl };
 }
 
 // GET /api/games/fetch-cover — поиск иконки и постера (без скачивания)
@@ -320,11 +355,11 @@ router.post('/', async (req, res) => {
   const covers = await downloadGameCovers(title.trim(), coverUrl, posterUrl);
   try {
     await db.execute({
-      sql: `INSERT INTO games (id, user_id, title, genre, score_gameplay, score_atmosphere, score_story, score_music, score_technical, score_impression, score_overall, comment, saved_at, cover_url, poster_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO games (id, user_id, title, genre, score_gameplay, score_atmosphere, score_story, score_music, score_technical, score_impression, score_overall, comment, saved_at, cover_url, poster_url, cover_source_url, poster_source_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [id, req.user.userId, title.trim(), genre,
         scores.gameplay, scores.atmosphere ?? null, scores.story ?? null, scores.music ?? null,
-        scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl],
+        scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl, covers.coverSource || '', covers.posterSource || ''],
     });
   } catch (e) {
     if (e.message?.includes('UNIQUE')) return res.status(409).json({ error: 'Вы уже оценили эту игру' });
@@ -349,11 +384,11 @@ router.put('/:id', async (req, res) => {
   if (!game) return res.status(404).json({ error: 'Игра не найдена' });
   const covers = await downloadGameCovers(title.trim(), coverUrl, posterUrl);
   await db.execute({
-    sql: `UPDATE games SET title = ?, genre = ?, score_gameplay = ?, score_atmosphere = ?, score_story = ?, score_music = ?, score_technical = ?, score_impression = ?, score_overall = ?, comment = ?, saved_at = ?, cover_url = ?, poster_url = ?
+    sql: `UPDATE games SET title = ?, genre = ?, score_gameplay = ?, score_atmosphere = ?, score_story = ?, score_music = ?, score_technical = ?, score_impression = ?, score_overall = ?, comment = ?, saved_at = ?, cover_url = ?, poster_url = ?, cover_source_url = ?, poster_source_url = ?
     WHERE id = ? AND user_id = ?`,
     args: [title.trim(), genre,
       scores.gameplay, scores.atmosphere ?? null, scores.story ?? null, scores.music ?? null,
-      scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl,
+      scores.technical, scores.impression, scores.overall, (comment || '').trim(), savedAt, covers.coverUrl, covers.posterUrl, covers.coverSource || '', covers.posterSource || '',
       req.params.id, req.user.userId],
   });
   res.json({ ok: true });

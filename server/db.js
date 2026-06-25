@@ -34,7 +34,9 @@ db.initDb = async function () {
       comment TEXT DEFAULT '',
       saved_at TEXT NOT NULL,
       cover_url TEXT DEFAULT '',
-      poster_url TEXT DEFAULT ''
+      poster_url TEXT DEFAULT '',
+      cover_source_url TEXT DEFAULT '',
+      poster_source_url TEXT DEFAULT ''
     )`,
     `CREATE TABLE IF NOT EXISTS user_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,6 +84,10 @@ db.initDb = async function () {
       console.log(`👑 Пользователь "${process.env.ADMIN_USERNAME}" назначен администратором`);
     }
   }
+
+  // Миграции: добавляем колонки, которых может не быть в старых таблицах
+  try { await db.execute('ALTER TABLE games ADD COLUMN cover_source_url TEXT DEFAULT \'\''); } catch {}
+  try { await db.execute('ALTER TABLE games ADD COLUMN poster_source_url TEXT DEFAULT \'\''); } catch {}
 };
 
 module.exports = db;
