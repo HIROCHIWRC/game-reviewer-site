@@ -64,7 +64,10 @@ router.post('/sell', async (req, res) => {
   const { itemId } = req.body;
   if (!itemId) return res.status(400).json({ error: 'Нужен ID предмета' });
 
-  const item = (await db.execute({ sql: 'SELECT id, user_id, skin_name, skin_value FROM user_items WHERE id = ?', args: [itemId] })).rows[0];
+  const item = (await db.execute({
+    sql: 'SELECT ui.id, ui.user_id, ui.skin_name, ui.skin_value, u.coins FROM user_items ui JOIN users u ON u.id = ui.user_id WHERE ui.id = ?',
+    args: [itemId],
+  })).rows[0];
   if (!item) return res.status(404).json({ error: 'Предмет не найден' });
   if (item.user_id !== req.user.userId) return res.status(403).json({ error: 'Это не твой предмет' });
 
@@ -73,7 +76,7 @@ router.post('/sell', async (req, res) => {
     { sql: 'UPDATE users SET coins = ROUND(coins + ?, 2) WHERE id = ?', args: [item.skin_value, req.user.userId] },
   ]);
 
-  const newBalance = (await db.execute({ sql: 'SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0].coins;
+  const newBalance = Math.round((item.coins + item.skin_value) * 100) / 100;
   res.json({ ok: true, coins: newBalance, sold: item.skin_name, value: item.skin_value });
 });
 
@@ -93,8 +96,7 @@ router.post('/open', async (req, res) => {
     { sql: 'INSERT INTO user_items (user_id, skin_name, skin_rarity, skin_value, skin_image, case_type) VALUES (?, ?, ?, ?, ?, ?)', args: [req.user.userId, skin.name, skin.rarity, skin.value, skin.image, caseId] },
   ]);
 
-  const newBalance = (await db.execute({ sql: 'SELECT ROUND(coins, 2) as coins FROM users WHERE id = ?', args: [req.user.userId] })).rows[0].coins;
-
+  const newBalance = Math.round((balance - caseData.price) * 100) / 100;
   res.json({ skin: { ...skin, itemId: Number(insertResult.lastInsertRowid) }, coins: newBalance, neighbors: pickNeighbors(caseId) });
 });
 
