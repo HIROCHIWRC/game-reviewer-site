@@ -7,6 +7,7 @@ import { MemeAdBanner } from './components/MemeAdBanner';
 import { IconButton } from './components/IconButton';
 import { CoinIcon } from './components/CoinIcon';
 import { Notification } from './components/Notification';
+import { SuggestMemeModal } from './components/SuggestMemeModal';
 import { gamesApi, chatApi, authApi } from './api';
 import { getRank } from './constants/ranks';
 
@@ -42,6 +43,7 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
   const [latestMessageId, setLatestMessageId] = useState(Number(localStorage.getItem('seenMessageId')) || 0);
   const [chatUnread, setChatUnread] = useState(false);
   const [userGameCount, setUserGameCount] = useState(0);
+  const [showSuggestMeme, setShowSuggestMeme] = useState(false);
 
   useEffect(() => {
     authApi.getProfile().then((data) => setUserGameCount(data.gameCount || 0)).catch(() => {});
@@ -191,6 +193,7 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
                 onExport={exportToJson}
                 onOpenCasino={() => setCurrentScreen('casino')}
                 onOpenChat={() => { markChatRead(); setCurrentScreen('chat'); }}
+                onSuggestMeme={() => setShowSuggestMeme(true)}
                 chatUnread={chatUnread}
               />
             )}
@@ -304,6 +307,7 @@ function AuthenticatedApp({ user, onLogout, onUpdateCoins }) {
       </main>
 
       <Notification notification={notification} onClose={clearNotification} />
+      <SuggestMemeModal visible={showSuggestMeme} onClose={() => setShowSuggestMeme(false)} />
       <span className="fixed bottom-2 right-3 text-[11px] text-slate-700/50 select-none pointer-events-none">
         v1.0.2
       </span>

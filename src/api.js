@@ -86,6 +86,16 @@ export const chatApi = {
   send: (text) => request('/chat', { method: 'POST', body: JSON.stringify({ text }) }),
 };
 
+// --- Memes ---
+export const memesApi = {
+  suggest: (text) => request('/memes/suggest', { method: 'POST', body: JSON.stringify({ text }) }),
+  suggestImage: (file) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return requestFormData('/memes/suggest-image', fd);
+  },
+};
+
 // --- Admin ---
 export const adminApi = {
   getUsers: () => request('/admin/users'),
@@ -101,6 +111,9 @@ export const adminApi = {
     return requestFormData('/admin/memes/images', fd);
   },
   deleteMemeImage: (filename) => request(`/admin/memes/images/${encodeURIComponent(filename)}`, { method: 'DELETE' }),
+  getSuggestions: (status = 'pending') => request(`/admin/memes/suggestions?status=${status}`),
+  approveSuggestion: (id) => request(`/admin/memes/suggestions/${id}/approve`, { method: 'POST' }),
+  rejectSuggestion: (id) => request(`/admin/memes/suggestions/${id}/reject`, { method: 'POST' }),
 };
 
 // --- Games ---

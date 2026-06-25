@@ -22,7 +22,7 @@ export function AdminScreen({ onBack }) {
       <div className="mb-4"><BackButton onClick={onBack} /></div>
       <h2 className="text-xl font-bold text-slate-100 mb-4">👑 Админ-панель</h2>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         <button
           type="button"
           onClick={() => setTab('users')}
@@ -41,10 +41,20 @@ export function AdminScreen({ onBack }) {
         >
           🃏 Мемы
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('suggestions')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold cursor-pointer transition-all ${
+            tab === 'suggestions' ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          💡 Предложки
+        </button>
       </div>
 
       {tab === 'users' && <UsersPanel />}
       {tab === 'memes' && <MemesPanel />}
+      {tab === 'suggestions' && <SuggestionsPanel />}
     </div>
   );
 }
@@ -330,6 +340,115 @@ function MemesPanel() {
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+function SuggestionsPanel() {
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [result, setResult] = useState(null);
+  const [filter, setFilter] = useState('pending');
+
+  const load = () => {
+    setLoading(true);
+    adminApi.getSuggestions(filter).then((data) => {
+      setSuggestions(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [filter]);
+
+  const handleApprove = async (id) => {
+    try {
+      const data = await adminApi.approveSuggestion(id);
+      setResult(data.message);
+      load();
+    } catch (err) {
+      setResult(`❌ ${err.message}`);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      const data = await adminApi.rejectSuggestion(id);
+      setResult(data.message);
+      load();
+    } catch (err) {
+      setResult(`❌ ${err.message}`);
+    }
+  };
+
+  return (
+    <div>
+      <ResultBanner message={result} onClose={() => setResult(null)} />
+
+      <div className="flex gap-2 mb-4">
+        {['pending', 'approved', 'rejected'].map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setFilter(s)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+              filter === s ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {s === 'pending' ? '⏳ На проверке' : s === 'approved' ? '✅ Одобрено' : '❌ Отклонено'}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-slate-500">⏳ Загрузка...</div>
+      ) : suggestions.length === 0 ? (
+        <div className="text-center py-16 bg-slate-900/20 border border-dashed border-slate-700/30 rounded-xl">
+          <p className="text-slate-500">{filter === 'pending' ? 'Нет предложений на проверке' : filter === 'approved' ? 'Нет одобренных' : 'Нет отклонённых'}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {suggestions.map((s) => (
+            <div key={s.id} className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span>#{s.id}</span>
+                  <span className="text-slate-400">@{s.username}</span>
+                  <span>{s.type === 'text' ? '📝' : '🖼️'}</span>
+                  <span>{s.createdAt?.slice(0, 16).replace('T', ' ')}</span>
+                </div>
+                {s.status === 'pending' && (
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleApprove(s.id)}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all"
+                    >
+                      ✅
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReject(s.id)}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all"
+                    >
+                      ❌
+                    </button>
+                  </div>
+                )}
+                {s.status === 'approved' && <span className="text-xs text-emerald-400 font-bold">✅</span>}
+                {s.status === 'rejected' && <span className="text-xs text-rose-400 font-bold">❌</span>}
+              </div>
+              {s.type === 'text' ? (
+                <p className="text-sm text-slate-200">{s.content}</p>
+              ) : (
+                <div className="relative max-w-xs">
+                  <img src={assetUrl(s.content)} alt={s.originalName} className="max-h-32 rounded-lg object-contain bg-slate-950/50" />
+                  <p className="text-xs text-slate-500 mt-1 truncate">{s.originalName}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

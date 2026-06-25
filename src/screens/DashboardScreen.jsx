@@ -1,7 +1,7 @@
 import { YellowButton } from '../components/YellowButton';
 import { SecondaryButton } from '../components/SecondaryButton';
 
-export function DashboardScreen({ gamesCount, loadError, onRetry, onAddGame, onViewGames, onViewLeaderboard, onExport, onOpenCasino, onOpenChat, chatUnread }) {
+export function DashboardScreen({ gamesCount, loadError, onRetry, onAddGame, onViewGames, onViewLeaderboard, onExport, onOpenCasino, onOpenChat, onSuggestMeme, chatUnread }) {
   if (loadError && gamesCount === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 space-y-6">
@@ -84,6 +84,15 @@ export function DashboardScreen({ gamesCount, loadError, onRetry, onAddGame, onV
         <SecondaryButton
           text="💩 Разрабы дауны"
           onClick={() => window.open('https://t.me/HIROCHI_WRC', '_blank')}
+          variant="outline"
+          className="w-full"
+        />
+      </div>
+
+      <div className="w-full">
+        <SecondaryButton
+          text="🃏 Предложить мем"
+          onClick={onSuggestMeme}
           variant="outline"
           className="w-full"
         />

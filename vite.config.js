@@ -12,6 +12,7 @@ export default defineConfig({
       '/memes': 'http://localhost:3001',
       '/skins': 'http://localhost:3001',
       '/cases': 'http://localhost:3001',
+      '/suggestions': 'http://localhost:3001',
     },
   },
 })

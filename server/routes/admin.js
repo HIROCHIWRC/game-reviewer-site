@@ -8,6 +8,7 @@ const adminMiddleware = require('../middleware/admin');
 const router = express.Router();
 
 const MEMES_DIR = path.join(__dirname, '..', 'public', 'memes');
+const SUGGESTIONS_DIR = path.join(__dirname, '..', 'public', 'suggestions');
 
 if (!fs.existsSync(MEMES_DIR)) fs.mkdirSync(MEMES_DIR, { recursive: true });
 
@@ -40,7 +41,70 @@ const upload = multer({
 
 router.use(adminMiddleware);
 
-// ---- Мемы: тексты ----
+// ---- Предложки мемов ----
+
+// GET /api/admin/memes/suggestions — список предложений
+router.get('/memes/suggestions', async (req, res) => {
+  const status = req.query.status || 'pending';
+  const result = await db.execute({
+    sql: "SELECT s.id, s.user_id, s.type, s.content, s.original_name, s.status, s.created_at, u.username FROM meme_suggestions s JOIN users u ON u.id = s.user_id WHERE s.status = ? ORDER BY s.created_at DESC",
+    args: [status],
+  });
+  res.json(result.rows.map((s) => ({
+    id: s.id,
+    userId: s.user_id,
+    username: s.username,
+    type: s.type,
+    content: s.type === 'image' ? `/suggestions/${encodeURIComponent(s.content)}` : s.content,
+    originalName: s.original_name,
+    status: s.status,
+    createdAt: s.created_at,
+  })));
+});
+
+// POST /api/admin/memes/suggestions/:id/approve — одобрить
+router.post('/memes/suggestions/:id/approve', async (req, res) => {
+  const id = Number(req.params.id);
+  const suggestion = (await db.execute({ sql: 'SELECT * FROM meme_suggestions WHERE id = ?', args: [id] })).rows[0];
+  if (!suggestion) return res.status(404).json({ error: 'Предложение не найдено' });
+  if (suggestion.status !== 'pending') return res.status(400).json({ error: 'Уже обработано' });
+
+  if (suggestion.type === 'text') {
+    const textsPath = path.join(MEMES_DIR, 'texts.txt');
+    const texts = fs.existsSync(textsPath)
+      ? fs.readFileSync(textsPath, 'utf-8').split('\n').filter(Boolean)
+      : [];
+    texts.push(suggestion.content);
+    fs.writeFileSync(textsPath, texts.join('\n') + '\n', 'utf-8');
+  } else {
+    const src = path.join(SUGGESTIONS_DIR, suggestion.content);
+    const ext = path.extname(suggestion.content);
+    const name = `suggested_${Date.now()}${ext}`;
+    const dst = path.join(MEMES_DIR, name);
+    if (fs.existsSync(src)) {
+      fs.renameSync(src, dst);
+    }
+  }
+
+  await db.execute({ sql: "UPDATE meme_suggestions SET status = 'approved' WHERE id = ?", args: [id] });
+  res.json({ message: 'Предложение одобрено' });
+});
+
+// POST /api/admin/memes/suggestions/:id/reject — отклонить
+router.post('/memes/suggestions/:id/reject', async (req, res) => {
+  const id = Number(req.params.id);
+  const suggestion = (await db.execute({ sql: 'SELECT * FROM meme_suggestions WHERE id = ?', args: [id] })).rows[0];
+  if (!suggestion) return res.status(404).json({ error: 'Предложение не найдено' });
+  if (suggestion.status !== 'pending') return res.status(400).json({ error: 'Уже обработано' });
+
+  if (suggestion.type === 'image') {
+    const fp = path.join(SUGGESTIONS_DIR, suggestion.content);
+    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+  }
+
+  await db.execute({ sql: "UPDATE meme_suggestions SET status = 'rejected' WHERE id = ?", args: [id] });
+  res.json({ message: 'Предложение отклонено' });
+});
 
 function readTexts() {
   const fp = path.join(MEMES_DIR, 'texts.txt');

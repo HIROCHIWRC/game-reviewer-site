@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const gamesRoutes = require('./routes/games');
 const casesRoutes = require('./routes/cases');
 const chatRoutes = require('./routes/chat');
+const memesRoutes = require('./routes/memes');
 const adminRoutes = require('./routes/admin');
 const db = require('./db');
 
@@ -20,12 +21,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/cases', casesRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/memes', memesRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use('/memes', express.static(path.join(__dirname, 'public', 'memes')));
 app.use('/covers', express.static(path.join(__dirname, 'public', 'covers')));
 app.use('/skins', express.static(path.join(__dirname, 'public', 'skins')));
 app.use('/cases', express.static(path.join(__dirname, 'public', 'cases')));
+app.use('/suggestions', express.static(path.join(__dirname, 'public', 'suggestions')));
 
 app.get('/api/memes/texts', (req, res) => {
   try {

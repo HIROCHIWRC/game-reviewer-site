@@ -54,6 +54,15 @@ db.initDb = async function () {
       text TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS meme_suggestions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      original_name TEXT DEFAULT '',
+      status TEXT DEFAULT 'pending',
+      created_at TEXT DEFAULT (datetime('now'))
+    )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_games_user_title ON games(user_id, title)`,
   ]);
 
